@@ -3,7 +3,8 @@
 """
 Created on Sat Mar 25 16:01:44 2023
 
-@author: pearl025
+@author: jaehoon cha
+@email: chajaehoon79@gmail.com
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -178,7 +179,7 @@ def get_outputs(model, data, test_dataloader, recon_exam, lat_dim, dir_name, epo
     df = pd.DataFrame(trj)
 
     # Save to CSV file
-    csv_filename = os.path.join(dir_name, 'trj_{}_{}.png'.format(epoch, j))
+    csv_filename = os.path.join(dir_name, 'trj_{}_{}.csv'.format(epoch, j))
     df.to_csv(csv_filename, index=False)
 
 

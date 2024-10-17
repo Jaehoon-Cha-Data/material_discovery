@@ -3,7 +3,8 @@
 """
 Created on Sat Aug 31 13:08:38 2024
 
-@author: ubuntu
+@author: jaehoon cha
+@email: chajaehoon79@gmail.com
 """
 import numpy as np 
 import torch
