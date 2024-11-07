@@ -124,10 +124,10 @@ def get_outputs(model, data, test_dataloader, recon_exam, lat_dim, dir_name, epo
     save_name = os.path.join(dir_name, 'hist_{}.png'.format(epoch))
     plt.savefig(save_name)
     plt.close()
-    
 
-    z_prepre = model.latent(recon_exam[-3:-2].to(device)).detach().cpu().numpy()
-    # z_prepre = np.mean(zs, axis = 0, keepdims=True)
+
+    # z_prepre = model.latent(recon_exam[-3:-2].to(device)).detach().cpu().numpy()
+    z_prepre = np.mean(zs, axis = 0, keepdims=True)
     z_min = np.percentile(zs,1, axis = 0)
     z_max = np.percentile(zs,99, axis = 0)  
 
