@@ -29,12 +29,12 @@ def parse_args():
     parser.add_argument('--backbone', type = str, default = 'conv')
     parser.add_argument('--epochs', type = int, default = 1000)
     parser.add_argument('--batch_size', type = int, default = 64)
-    parser.add_argument('--lat_dim', type = int, default = 10)
+    parser.add_argument('--lat_dim', type = int, default = 9)
     parser.add_argument('--beta', type = float, default = 4.)
     parser.add_argument('--lr', type = float, default = 1e-4)
     parser.add_argument('--lr_decay', type = float, default = 0.95)
     parser.add_argument('--num_workers', type=int, default = 4)
-    parser.add_argument('--rnd', type = int, default = 29152)
+    parser.add_argument('--rnd', type = int, default = 34)
 
     args = parser.parse_args()
     
@@ -152,7 +152,7 @@ if not os.path.exists(model_path):
     
 
 else:
-    model.load_state_dict(torch.load(model_path))
+    model = torch.load(model_path)
     model.to(device)    
     get_outputs(model, train_x, test_dataloader, recon_exam, config['lat_dim'], save_folder, 'infer',  device = device)
 
