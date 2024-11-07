@@ -15,5 +15,5 @@
 # Reconstruction results
 
 * Reconstruction
-![reconstr](imgs/results/spectra/spd_10_4.0_29152/trj_infer_4.csv.png)
+![reconstr](imgs/results/spectra/spd_10_4.0_29152/reconstr_infer.png)
 
