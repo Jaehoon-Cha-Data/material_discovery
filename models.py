@@ -294,5 +294,50 @@ class SPD(SPC):
         z2 = self.reparameterize(z)
         reconstr = self.decode(z2)
         return [reconstr, z2, z] 
+    
+    
+
+class SPV(SPC):
+    def __init__(self, lat_dim):
+        super(SPV, self).__init__(lat_dim)
+
+        self.to_logvar = nn.Linear(64*3, self.latent_dim)
 
 
+    def sample(self, num_samples = 100, z = None):
+        samples = self.decode(z)
+        return samples
+
+
+    def reconstr(self, x):
+        mu, _ = self.encode(x)
+        reconstr = self.decode(mu)
+        return reconstr
+
+
+    def encode(self, x):          
+        x = self.encoder(x)  
+        x = torch.flatten(x, start_dim=1)   
+        
+        mu = self.to_mu(x)
+        logvar = self.to_logvar(x)
+
+        return mu, logvar
+        
+
+    def latent(self, x):
+        z, _ = self.encode(x)
+        return z
+
+
+
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)   
+        eps = torch.randn_like(std)     
+        return mu + eps * std          
+    
+    def forward(self, x):
+        mu, logvar = self.encode(x)
+        c = self.reparameterize(mu, logvar)
+        reconstr = self.decode(c)
+        return [reconstr, mu, logvar]    

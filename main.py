@@ -23,14 +23,13 @@ from infer import *
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name', type = str, default = 'spd')
+    parser.add_argument('--model_name', type = str, default = 'vae', choices = ['dae', 'vae'])
     parser.add_argument('--path_dir', type = str, default = os.getcwd())
-    parser.add_argument('--dataset', type = str, default = 'spectra') 
+    parser.add_argument('--dataset', type = str, default = 'WR_fabini', choices =['Spectra', 'FT_spectra', 'WR_fabini']) 
     parser.add_argument('--backbone', type = str, default = 'conv')
     parser.add_argument('--epochs', type = int, default = 1000)
     parser.add_argument('--batch_size', type = int, default = 64)
-    parser.add_argument('--lat_dim', type = int, default = 9)
-    parser.add_argument('--beta', type = float, default = 4.)
+    parser.add_argument('--lat_dim', type = int, default = 12)
     parser.add_argument('--lr', type = float, default = 1e-4)
     parser.add_argument('--lr_decay', type = float, default = 0.95)
     parser.add_argument('--num_workers', type=int, default = 4)
@@ -46,7 +45,6 @@ def parse_args():
             ('epochs', args.epochs),
             ('batch_size', args.batch_size),
             ('lat_dim', args.lat_dim),
-            ('beta', args.beta),
             ('lr', args.lr),
             ('lr_decay', args.lr_decay),
             ('num_workers', args.num_workers),
@@ -63,12 +61,22 @@ config = parse_args()
 data_path = os.path.join(config['path_dir'], 'datasets')   
 
 ### call data ###    
-train_x = Spectra(data_path, transform=transform0)
+if config['dataset'] == 'Spectra':
+    train_x = Spectra(data_path, transform=transform0)
+    recon_idxs = [16123,  20995, 21058, 18650,  7375,   995,  3207,  5243, 14394, 375]
+elif config['dataset'] == 'FT_spectra':
+    train_x = FT_spectra(data_path, transform=transform0)
+    recon_idxs = [16123,  6198, 11058, 13650,  7375,   995,  3207,  5243, 14394, 375]
+elif config['dataset'] == 'WR_fabini':
+    train_x = WR_fabini(data_path, transform=transform0)
+    recon_idxs = [10123,  6198, 11058, 9650,  7375,   995,  3207,  5243, 4394, 375]
+    
+test_x = FT_spectra(data_path, transform=transform0)
 
 dataset_size = train_x.__len__()
 print(dataset_size)
 recon_exam = []
-for idx in [6123,  6198, 58, 11650,  7375,   995,  3207,  5243, 14394, 627]:
+for idx in recon_idxs:
     img = train_x[idx]['x1']
     recon_exam.append(img)
 recon_exam = torch.stack(recon_exam)
@@ -78,7 +86,7 @@ train_dataloader = DataLoader(train_x, batch_size= config['batch_size'], shuffle
                               num_workers=config['num_workers'], pin_memory=True)
 
 
-test_dataloader = DataLoader(train_x, batch_size= config['batch_size'], shuffle=True)
+test_dataloader = DataLoader(test_x, batch_size= config['batch_size'], shuffle=True)
 
 
 
@@ -98,7 +106,7 @@ try:
 except OSError:
     pass  
 
-save_folder= os.path.join(save_folder, config['model_name'] + '_{}_{}_{}'.format(config['lat_dim'], config['beta'], config['rnd']))
+save_folder= os.path.join(save_folder, config['model_name'] + '_{}_{}'.format(config['lat_dim'], config['rnd']))
 try:
     os.mkdir(save_folder)
 except OSError:
@@ -106,12 +114,18 @@ except OSError:
 
 model_path = os.path.join(save_folder,'model.pth')
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")       
-W = [[1.]*1 + [0.01]*(config['lat_dim']-1)]    
-   
-model = SPD(config['lat_dim'], torch.Tensor(W).to(device))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  
 
-if not os.path.exists(model_path): 
+if config['model_name'] == 'dae':
+    W = [[1.]*1 + [0.005]*(config['lat_dim']-1)]    
+    model = SPD(config['lat_dim'], torch.Tensor(W).to(device))
+    
+elif config['model_name'] == 'vae':
+    model = SPV(config['lat_dim'])
+
+pred_trained_path = os.path.join(config['path_dir'], 'pretrained/{}_model.pth'.format(config['model_name']))  
+
+if not os.path.exists(pred_trained_path): 
     torch.backends.cudnn.benchmark = True
     model.to(device)    
 
@@ -125,7 +139,16 @@ if not os.path.exists(model_path):
             input, target = batch['x1'].to(device), batch['x1'].to(device)
             optimizer.zero_grad()
             output = model(input)
-            loss = torch.nn.L1Loss()(target, output[0])
+            
+            if config['model_name'] == 'dae':
+                loss = torch.nn.L1Loss()(target, output[0])
+            
+            elif config['model_name'] == 'vae':
+                recon, mu, logvar = output
+                recon_loss = torch.nn.L1Loss(reduction  = 'none')(target, recon).sum([1, 2])
+                KLD = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp()).mean(1)
+                loss = (recon_loss + config['beta']*KLD).mean()
+
             epoch_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -152,9 +175,6 @@ if not os.path.exists(model_path):
     
 
 else:
-    model = torch.load(model_path)
+    model = torch.load(pred_trained_path)
     model.to(device)    
     get_outputs(model, train_x, test_dataloader, recon_exam, config['lat_dim'], save_folder, 'infer',  device = device)
-
-    
-    

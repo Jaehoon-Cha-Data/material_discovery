@@ -184,67 +184,104 @@ def get_outputs(model, data, test_dataloader, recon_exam, lat_dim, dir_name, epo
 
 
 
-
-    xs = []
-    zs = []
-    slme = []
-    maxs = []
-    positions = []
-    n_locals = []
-    slopes = []
-    materials = []
-    dg = []
-    for idx in range(data.__len__()//100+1):
-        xs.append(data.Spectra[100*idx:100*(idx+1), :])
-        inputs = data.Spectra[100*idx:100*(idx+1), :].astype(np.float32)
-        inputs = torch.from_numpy(inputs).unsqueeze(1)
-        z = model.latent(inputs.to(device))
-
-        z = z.detach().cpu().numpy()
-        zs.append(z)
-        materials.append(data.material_names[100*idx:100*(idx+1)])
-        dg.append(data.direct_gaps_array[100*idx:100*(idx+1)])
-        slme.append(data.slmes_array[100*idx:100*(idx+1)])
-        maxs.append(data.maxs_array[100*idx:100*(idx+1)])
-        positions.append(data.positions_array[100*idx:100*(idx+1)])
-        n_locals.append(data.n_locals_array[100*idx:100*(idx+1)])
-        slopes.append(data.slopes_array[100*idx:100*(idx+1)])
-        
-        
-
-
-
-    xs = np.concatenate(xs)
-    zs = np.concatenate(zs)
-    materials = np.concatenate(materials)
-    dg = np.concatenate(dg)
-    slme = np.concatenate(slme)
-    maxs = np.concatenate(maxs)
-    positions = np.concatenate(positions)
-    n_locals = np.concatenate(n_locals)
-    slopes = np.concatenate(slopes)
     
         
     
     
     # Create the HDF5 file
-    h5_file_path = os.path.join(dir_name, 'FT_spectra_gap_SLME_v2_with_latent_dim.h5')
-    with h5py.File(h5_file_path, 'w') as h5file:
-        # Store the material names as a dataset
-        h5file.create_dataset('material_names', data=np.array(materials, dtype = 'S'))
+    if dir_name.split('/')[-2] == 'Spectra' or dir_name.split('/')[-2] == 'WR_fabini':
         
-        # Store alphas, direct gaps, and SLME as separate datasets
-        h5file.create_dataset('alphas/cm^-1', data=xs)
-        h5file.create_dataset('direct_gaps', data=dg)
-        h5file.create_dataset('SLME', data=slme)
-        h5file.create_dataset('maxs', data=maxs)
-        h5file.create_dataset('positions', data=positions)
-        h5file.create_dataset('n_local_maximums', data=n_locals)
-        h5file.create_dataset('slopes', data=slopes)
+        xs = []
+        zs = []
+        maxs = []
+        positions = []
+        n_locals = []
+        slopes = []
+        materials = []
+        for idx in range(data.__len__()//100+1):
+            xs.append(data.Spectra[100*idx:100*(idx+1), :])
+            inputs = data.Spectra[100*idx:100*(idx+1), :].astype(np.float32)
+            inputs = torch.from_numpy(inputs).unsqueeze(1)
+            z = model.latent(inputs.to(device))
+
+            z = z.detach().cpu().numpy()
+            zs.append(z)
+            materials.append(data.material_names[100*idx:100*(idx+1)])
+            maxs.append(data.maxs_array[100*idx:100*(idx+1)])
+            positions.append(data.positions_array[100*idx:100*(idx+1)])
+            n_locals.append(data.n_locals_array[100*idx:100*(idx+1)])
+            slopes.append(data.slopes_array[100*idx:100*(idx+1)])
+            
+        xs = np.concatenate(xs)
+        zs = np.concatenate(zs)
+        materials = np.concatenate(materials)
+        maxs = np.concatenate(maxs)
+        positions = np.concatenate(positions)
+        n_locals = np.concatenate(n_locals)
+        slopes = np.concatenate(slopes)
+        
+        h5_file_path = os.path.join(dir_name, '{}_with_latent_dim.h5'.format(dir_name.split('/')[-2]))
+        with h5py.File(h5_file_path, 'w') as h5file:
+            # Store the material names as a dataset
+            h5file.create_dataset('material_names', data=np.array(materials, dtype = 'S'))
+            
+            # Store alphas, direct gaps, and SLME as separate datasets
+            h5file.create_dataset('alphas/cm^-1', data=xs)
+            h5file.create_dataset('maxs', data=maxs)
+            h5file.create_dataset('positions', data=positions)
+            h5file.create_dataset('n_local_maximums', data=n_locals)
+            h5file.create_dataset('slopes', data=slopes)
+
+
+    elif dir_name.split('/')[-2] == 'FT_spectra':
+
+        xs = []
+        zs = []
+        slme = []
+        maxs = []
+        positions = []
+        n_locals = []
+        slopes = []
+        materials = []
+        dg = []
+        for idx in range(data.__len__()//100+1):
+            xs.append(data.Spectra[100*idx:100*(idx+1), :])
+            inputs = data.Spectra[100*idx:100*(idx+1), :].astype(np.float32)
+            inputs = torch.from_numpy(inputs).unsqueeze(1)
+            z = model.latent(inputs.to(device))
+    
+            z = z.detach().cpu().numpy()
+            zs.append(z)
+            materials.append(data.material_names[100*idx:100*(idx+1)])
+            dg.append(data.direct_gaps_array[100*idx:100*(idx+1)])
+            slme.append(data.slmes_array[100*idx:100*(idx+1)])
+            maxs.append(data.maxs_array[100*idx:100*(idx+1)])
+            positions.append(data.positions_array[100*idx:100*(idx+1)])
+            n_locals.append(data.n_locals_array[100*idx:100*(idx+1)])
+            slopes.append(data.slopes_array[100*idx:100*(idx+1)])
+            
+        xs = np.concatenate(xs)
+        zs = np.concatenate(zs)
+        materials = np.concatenate(materials)
+        dg = np.concatenate(dg)
+        slme = np.concatenate(slme)
+        maxs = np.concatenate(maxs)
+        positions = np.concatenate(positions)
+        n_locals = np.concatenate(n_locals)
+        slopes = np.concatenate(slopes)
+
+        h5_file_path = os.path.join(dir_name, '{}_with_latent_dim.h5'.format(dir_name.split('/')[-2]))
+        with h5py.File(h5_file_path, 'w') as h5file:
+            # Store the material names as a dataset
+            h5file.create_dataset('material_names', data=np.array(materials, dtype = 'S'))
+            
+            # Store alphas, direct gaps, and SLME as separate datasets
+            h5file.create_dataset('alphas/cm^-1', data=xs)
+            h5file.create_dataset('direct_gaps', data=dg)
+            h5file.create_dataset('SLME', data=slme)
+            h5file.create_dataset('maxs', data=maxs)
+            h5file.create_dataset('positions', data=positions)
+            h5file.create_dataset('n_local_maximums', data=n_locals)
+            h5file.create_dataset('slopes', data=slopes)
     
     print(f'HDF5 file "{h5_file_path}" created successfully.')
-
-
-
-
-
