@@ -54,10 +54,11 @@ def transform3(sample):
 class Spectra(Dataset):
     def __init__(self, path_dir, transform=None):
 
-        self.data_path = os.path.join(path_dir, "combined.h5")
+        self.data_path = os.path.join(path_dir, "combined_wr_ft_spectra.h5")
         with h5py.File(self.data_path, 'r') as h5file:
             self.material_names = np.array(h5file['material_names']).astype(str)
             self.Spectra = h5file['alphas/cm^-1'][:]
+            self.slmes_array = h5file['SLME'][:]
             self.maxs_array = h5file['maxs'][:]
             self.positions_array = h5file['positions'][:]
             self.n_locals_array = h5file['n_local_maximums'][:]
@@ -85,6 +86,8 @@ class Spectra(Dataset):
         sample2 = self.transform(sample2)
         sample2 = torch.from_numpy(sample2).unsqueeze(0)
         
+        slme = np.array([self.slmes_array[idx]])
+        slme = torch.from_numpy(slme)
 
         maxs = np.array([self.maxs_array[idx]])
         maxs = torch.from_numpy(maxs)
@@ -97,19 +100,23 @@ class Spectra(Dataset):
 
         slopes = np.array([self.slopes_array[idx]])
         slopes = torch.from_numpy(slopes)
+        
+        mns = self.material_names[idx]
 
 
         sample = {'x1':sample1,
                   'x2':sample2,
+                  'slme':slme,
                   'max':maxs,
                   'position':positions,
                   'n_local':n_locals,
-                  'slope':slopes
+                  'slope':slopes,
+                  'mns':mns
                   }
 
             
         return sample
-    
+
 
 class FT_spectra(Dataset):
     def __init__(self, path_dir, transform=None):
@@ -161,6 +168,8 @@ class FT_spectra(Dataset):
 
         slopes = np.array([self.slopes_array[idx]])
         slopes = torch.from_numpy(slopes)
+        
+        mns = self.material_names[idx]
 
 
         sample = {'x1':sample1,
@@ -169,7 +178,8 @@ class FT_spectra(Dataset):
                   'max':maxs,
                   'position':positions,
                   'n_local':n_locals,
-                  'slope':slopes
+                  'slope':slopes,
+                  'mns':mns
                   }
 
             
