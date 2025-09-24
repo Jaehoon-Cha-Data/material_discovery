@@ -60,29 +60,43 @@ def get_outputs(model, data, test_dataloader, recon_exam, lat_dim, dir_name, epo
     plt.savefig(save_name)    
     plt.close()
 
-    zs = []
-    maxs = []
-    slme = []
-    
 
+
+    zs = []
+    slme = []
+    maxs = []
+    positions = []
+    n_locals = []
+    slopes = []
     for tidx, test_data in enumerate(test_dataloader):        
         z = model.latent(test_data['x1'].to(device))
         z = z.detach().cpu().numpy()
         zs.append(z)
-        maxs.append(test_data['max'].detach().cpu().numpy())
         slme.append(test_data['slme'].detach().cpu().numpy())
-        
-    zs = np.vstack(zs)
-    maxs = np.vstack(maxs)
-    slme = np.vstack(slme)
+        maxs.append(test_data['max'].detach().cpu().numpy())
+        positions.append(test_data['position'].detach().cpu().numpy())
+        n_locals.append(test_data['n_local'].detach().cpu().numpy())
+        slopes.append(test_data['slope'].detach().cpu().numpy())
+       
+
     
-    features = np.concatenate((maxs, slme), axis = 1)
+    zs = np.vstack(zs)
+    slme = np.vstack(slme)
+    maxs = np.vstack(maxs)
+    positions = np.vstack(positions)
+    n_locals = np.vstack(n_locals)
+    slopes = np.vstack(slopes)
+
+
+    
+    features = np.concatenate((slme, positions, maxs, slopes, n_locals), axis = 1)
     covariance_matrix = pearson_correlation_matrix(features, zs)
     covariance_matrix_abs = np.abs(covariance_matrix)
 
 
-    plt.figure(figsize=(10, 4))
-    plt.imshow(covariance_matrix, cmap='RdBu', aspect='auto', vmin=-1, vmax=1)
+    
+    plt.figure(figsize=(10, 8))
+    plt.imshow(covariance_matrix_abs, cmap='coolwarm', aspect='auto')
     
     # Add color bar
     plt.colorbar(label='Covariance')
@@ -97,13 +111,22 @@ def get_outputs(model, data, test_dataloader, recon_exam, lat_dim, dir_name, epo
     plt.xlabel('X features')
     plt.ylabel('Y features')
     plt.xticks(range(covariance_matrix.shape[1]), [r'$Dim_{{{}}}$'.format(i+1) for i in range(lat_dim)])
-    plt.yticks(range(covariance_matrix.shape[0]), ['max', 'slme'])
+    plt.yticks(range(covariance_matrix.shape[0]), ['slme', 'p', 'm', 's', 'n'])
     
     save_name = os.path.join(dir_name, 'cov_mat_{}.png'.format(epoch))
     plt.savefig(save_name)
     plt.close()
 
+    
+    plt.figure()
+    plt.bar(np.arange(lat_dim), np.std(zs, axis = 0))
+    plt.title('hist_{}'.format(epoch))
+    save_name = os.path.join(dir_name, 'hist_{}.png'.format(epoch))
+    plt.savefig(save_name)
+    plt.close()
 
+
+    # z_prepre = model.latent(recon_exam[-3:-2].to(device)).detach().cpu().numpy()
     z_prepre = np.mean(zs, axis = 0, keepdims=True)
     z_min = np.percentile(zs,1, axis = 0)
     z_max = np.percentile(zs,99, axis = 0)  
@@ -151,3 +174,7 @@ def get_outputs(model, data, test_dataloader, recon_exam, lat_dim, dir_name, epo
     plt.savefig(save_name)    
     plt.close()
 
+
+
+    
+        

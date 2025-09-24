@@ -23,9 +23,9 @@ from infer import *
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name', type = str, default = 'vae', choices = ['dae', 'vae'])
+    parser.add_argument('--model_name', type = str, default = 'dae', choices = ['dae', 'vae'])
     parser.add_argument('--path_dir', type = str, default = os.getcwd())
-    parser.add_argument('--dataset', type = str, default = 'Spectra', choices =['FT_spectra']) 
+    parser.add_argument('--dataset', type = str, default = 'Spectra', choices =['Spectra', 'FT_spectra', 'WR_fabini']) 
     parser.add_argument('--backbone', type = str, default = 'conv')
     parser.add_argument('--epochs', type = int, default = 1000)
     parser.add_argument('--batch_size', type = int, default = 64)
@@ -61,8 +61,15 @@ config = parse_args()
 data_path = os.path.join(config['path_dir'], 'datasets')   
 
 ### call data ###    
-train_x = FT_spectra(data_path, transform=transform0)
-recon_idxs = [16123,  6198, 11058, 13650,  7375,   995,  3207,  5243, 14394, 375]
+if config['dataset'] == 'Spectra':
+    train_x = Spectra(data_path, transform=transform0)
+    recon_idxs = [16123,  20995, 21058, 18650,  7375,   995,  3207,  5243, 14394, 375]
+elif config['dataset'] == 'FT_spectra':
+    train_x = FT_spectra(data_path, transform=transform0)
+    recon_idxs = [16123,  6198, 11058, 13650,  7375,   995,  3207,  5243, 14394, 375]
+elif config['dataset'] == 'WR_fabini':
+    train_x = WR_fabini(data_path, transform=transform0)
+    recon_idxs = [10123,  6198, 11058, 9650,  7375,   995,  3207,  5243, 4394, 375]
     
 test_x = FT_spectra(data_path, transform=transform0)
 
@@ -80,6 +87,7 @@ train_dataloader = DataLoader(train_x, batch_size= config['batch_size'], shuffle
 
 
 test_dataloader = DataLoader(test_x, batch_size= config['batch_size'], shuffle=True)
+
 
 
 
@@ -121,6 +129,7 @@ pred_trained_path = os.path.join(config['path_dir'], 'pretrained/{}_model_{}.pth
 if not os.path.exists(pred_trained_path): 
     torch.backends.cudnn.benchmark = True
     model.to(device)    
+
     
     optimizer = torch.optim.Adam(model.parameters(), lr = config['lr'], betas=(0.9, 0.99))
         
